@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <string.h>
 #include "http-parser.h"
+#include "request.h"
 
 
 #define BUF_SIZE 2048
@@ -34,7 +35,7 @@ void* request_handler(void *arg)
     {
         fscanf_s(clnt_read,"%s",&message,SMALL_BUF);
         if(feof(clnt_read))
-            break;
+            break;user.major= strtok(NULL,"$");
     }
     parseHttpHeader(parseHttpRequestLine(header, &req_line), &fields);
     
@@ -118,18 +119,62 @@ void error_handling(char* message)
 
 void parse_message(char* message, size_t msglen)
 {
+    char* header;
+    user_info user;
+    user_info d_user;
+    char* acceptance;
     switch(message[0])
+    {
         case '0' :
+            header = strtok(message,"$");
+            user.id = strtok(NULL,"$");
         
         case '1' :
+            header = strtok(message,"$");
+            user.id = strtok(NULL,"$");
+            user.password = strtok(NULL,"$");
+            user.name =strtok(NULL,"$");
+            user.email = strtok(NULL,"$");
+            user.sex = strtok(NULL,"$");
         case '2' :
+            header = strtok(message,"$");
+            user.id = strtok(NULL,"$");
+            user.password = strtok(NULL,"$");
         case '3' :
+            header = strtok(message,"$");
+            user.email = strtok(NULL,"$");
         case '4' :
+            header = strtok(message,"$");
+            user.id = strtok(NULL,"$");
+            user.email = strtok(NULL,"$");
         case '5' :
+            header = strtok(message,"$");
+            user.id = strtok(NULL,"$");
+            d_user.id = strtok(NULL,"$");
         case '6' :
+            header = strtok(message,"$");
+            user.id = strtok(NULL,"$");
+            d_user.id = strtok(NULL,"$");
+            acceptance = strtok(NULL,"$");
         case '7' :
-        case '8' :
-        case '9' :
-            
+            header = strtok(message,"$");   
+            user.id=strtok(NULL,"$");
+            user.password=strtok(NULL,"$");
+            user.email= strtok(NULL,"$");
+            user.name= strtok(NULL,"$");
+            user.sex= strtok(NULL,"$");
+            user.statusmsg= strtok(NULL,"$");
+            user.age= strtok(NULL,"$");
+            user.height= strtok(NULL,"$");
+            user.address= strtok(NULL,"$");
+            user.hobby= strtok(NULL,"$");
+            user.college= strtok(NULL,"$");
+            user.major= strtok(NULL,"$");
+            user.imageURL= strtok(NULL,"$");
+            user.religion= strtok(NULL,"$");
+            user.club= strtok(NULL,"$");
+            user.abroadexp= strtok(NULL,"$");
+            user.milserv= strtok(NULL,"$");
+    }
 }
 

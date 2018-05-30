@@ -9,7 +9,7 @@ typedef struct user_info{
     char* age;
     char* imageURL;
     char* statusmsg;
-    char* hight;
+    char* height;
     char* address;
     char* major;
     char* religion;
@@ -25,4 +25,4 @@ extern void send_data(FILE* fp, char* ct, char* file_name);
 extern char* content_type(char* file);
 extern void send_error(FILE* fp);
 extern void error_handling(char* message);
-extern void parse_message(char* message, size_t msglen);
+extern void parse_message(char* message);
