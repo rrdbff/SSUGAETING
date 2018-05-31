@@ -2,8 +2,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <fcntl.h>
 #include "http-parser.h"
 #include "request.h"
+
 
 
 #define BUF_SIZE 2048
@@ -14,12 +16,13 @@ void* request_handler(void *arg)
     int clnt_sock=*((int*)arg);
     http_request_line_t req_line= {0,};
     http_header_fields_t fields = {0,};
+    user_info user={0,};
+    chat chatinfo={0,};
     FILE* clnt_read;
     FILE* clnt_write;
     char buf[BUF_SIZE];
     char header[BUF_SIZE];
     char message[BUF_SIZE];
-    char buf[SMALL_BUF];
     char ct[15];
 
     clnt_read = fdopen(clnt_sock, "r");
@@ -38,11 +41,17 @@ void* request_handler(void *arg)
             break;user.major= strtok(NULL,"$");
     }
     parseHttpHeader(parseHttpRequestLine(header, &req_line), &fields);
-    
+    parse_message(message, &user, &chatinfo);
 
     strcpy(ct, content_type(header));
     fclose(clnt_read);
-    send_data(clnt_write, ct, req_line.uri);
+    
+    printf("id : %s\n"
+           "pw : %s\n"
+           "name : %s\n"
+           "email : %s\n"
+           "sex : %s\n",user.id,user.password,user.name,user.email,user.sex);
+  //  send_data(clnt_write, ct, req_line.uri);
 }
 
 void send_data(FILE* fp, char* ct, char* file_name)
@@ -61,7 +70,7 @@ void send_data(FILE* fp, char* ct, char* file_name)
         send_error(fp);
         return;
     }
-    
+                chatinfo->s_id
     fputs(protocol,fp);
     fputs(server,fp);
     fputs(cnt_len,fp);
@@ -117,64 +126,77 @@ void error_handling(char* message)
     exit(1);
 }
 
-void parse_message(char* message, size_t msglen)
+void parse_message(char* message, user_info* user, chat* chatinfo)
 {
     char* header;
-    user_info user;
-    user_info d_user;
-    char* acceptance;
     switch(message[0])
     {
-        case '0' :
+        case '0' :      //id repetition check message
             header = strtok(message,"$");
-            user.id = strtok(NULL,"$");
+            user->id = strtok(NULL,"$");
         
-        case '1' :
+        case '1' :      //create account message
             header = strtok(message,"$");
-            user.id = strtok(NULL,"$");
-            user.password = strtok(NULL,"$");
-            user.name =strtok(NULL,"$");
-            user.email = strtok(NULL,"$");
-            user.sex = strtok(NULL,"$");
-        case '2' :
+            user->id = strtok(NULL,"$");
+            user->password = strtok(NULL,"$");
+            user->name =strtok(NULL,"$");
+            user->email = strtok(NULL,"$");
+            user->sex = strtok(NULL,"$");
+        case '2' :      //login id/pw message
             header = strtok(message,"$");
-            user.id = strtok(NULL,"$");
-            user.password = strtok(NULL,"$");
-        case '3' :
+            user->id = strtok(NULL,"$");
+            user->password = strtok(NULL,"$");
+        case '3' :      //email check message to find id
             header = strtok(message,"$");
-            user.email = strtok(NULL,"$");
-        case '4' :
+            user->email = strtok(NULL,"$");
+        case '4' :      //email/id check message to find pw
             header = strtok(message,"$");
-            user.id = strtok(NULL,"$");
-            user.email = strtok(NULL,"$");
-        case '5' :
+            user->id = strtok(NULL,"$");
+            user->email = strtok(NULL,"$");
+        case '5' :      //user matching request message
             header = strtok(message,"$");
-            user.id = strtok(NULL,"$");
-            d_user.id = strtok(NULL,"$");
-        case '6' :
+            chatinfo->s_id = strtok(NULL,"$");
+            chatinfo->d_id = strtok(NULL,"$");
+        case '6' :      //user matching response message
             header = strtok(message,"$");
-            user.id = strtok(NULL,"$");
-            d_user.id = strtok(NULL,"$");
-            acceptance = strtok(NULL,"$");
-        case '7' :
+            chatinfo->s_id = strtok(NULL,"$");
+            chatinfo->d_id = strtok(NULL,"$");
+            chatinfo->acceptance = strtok(NULL,"$");
+        case '7' :      //update profile message
             header = strtok(message,"$");   
-            user.id=strtok(NULL,"$");
-            user.password=strtok(NULL,"$");
-            user.email= strtok(NULL,"$");
-            user.name= strtok(NULL,"$");
-            user.sex= strtok(NULL,"$");
-            user.statusmsg= strtok(NULL,"$");
-            user.age= strtok(NULL,"$");
-            user.height= strtok(NULL,"$");
-            user.address= strtok(NULL,"$");
-            user.hobby= strtok(NULL,"$");
-            user.college= strtok(NULL,"$");
-            user.major= strtok(NULL,"$");
-            user.imageURL= strtok(NULL,"$");
-            user.religion= strtok(NULL,"$");
-            user.club= strtok(NULL,"$");
-            user.abroadexp= strtok(NULL,"$");
-            user.milserv= strtok(NULL,"$");
+            user->id=strtok(NULL,"$");
+            user->password=strtok(NULL,"$");
+            user->email= strtok(NULL,"$");
+            user->name= strtok(NULL,"$");
+            user->sex= strtok(NULL,"$");
+            user->statusmsg= strtok(NULL,"$");
+            user->age= strtok(NULL,"$");
+            user->height= strtok(NULL,"$");
+            user->address= strtok(NULL,"$");
+            user->hobby= strtok(NULL,"$");
+            user->college= strtok(NULL,"$");
+            user->major= strtok(NULL,"$");
+            user->imageURL= strtok(NULL,"$");
+            user->religion= strtok(NULL,"$");
+            user->club= strtok(NULL,"$");
+            user->abroadexp= strtok(NULL,"$");
+            user->milserv= strtok(NULL,"$");
+        case '8' :      //chat : send image
+            header = strtok(message,"$");
+            chatinfo->s_id = strtok(NULL,"$");
+            chatinfo->d_id = strtok(NULL,"$");
+            int fd;
+            char* temp=strtok(NULL,"$");
+            if (0<(fd=creat("image.jpg",0644)))
+            {
+                write(fd,temp,strlen(temp));
+                close(fd);
+            }
+            else
+            {
+                printf("file create fail");
+            }
+        case '9':       //chat : send txt
     }
 }
 
