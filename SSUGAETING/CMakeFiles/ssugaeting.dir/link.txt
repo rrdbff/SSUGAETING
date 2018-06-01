@@ -1,0 +1,1 @@
+/usr/bin/cc    CMakeFiles/ssugaeting.dir/main.c.o CMakeFiles/ssugaeting.dir/http-parser.c.o CMakeFiles/ssugaeting.dir/request.c.o  -o ssugaeting -lpthread 
