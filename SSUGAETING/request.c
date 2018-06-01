@@ -15,50 +15,53 @@ void* request_handler(void *arg)
 {
     char response_packet[1024] = "HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nOK&";
     int clnt_sock=*((int*)arg);
-//         char ss[BUF_SIZE]; 
-//         read(clnt_sock,ss,sizeof(ss));
-//         printf("%s",ss);
-//         write(clnt_sock,response_packet,sizeof(response_packet));
-//         printf("%s\n",response_packet);
-//         puts("ok sent");
-//         puts("BSBS");
-    http_request_line_t req_line= {0,};
-    http_header_fields_t fields = {0,};
-    user_info user={0,};
-    chat chatinfo={0,};
-    FILE* clnt_read;
-    FILE* clnt_write;
-    char buf[BUF_SIZE];
-    char header[BUF_SIZE];
-    char message[5120];
-    char ct[15];
- 
-    clnt_read = fdopen(clnt_sock, "r");
-    clnt_write = fdopen(dup(clnt_sock), "w");
-    while(1)
-    {
-        fgets(buf,BUF_SIZE,clnt_read);
-        strcat(header,buf);
-        printf("%s",header);
-        if((strstr(buf,"\r\n\r\n"))==NULL)
-            break;
-    }
-    fputs("c",stdout);
-   while(1)
-   {
-        fscanf(clnt_read,"%s",message);
-        puts("message read");
-       if(feof(clnt_read))
-           break;
-   }
-    printf("%s",message);
-    parseHttpHeader(parseHttpRequestLine(header, &req_line), &fields);
-    parse_message(message, &user, &chatinfo);
-    printf("a");
-    strcpy(ct, content_type(header));
-    fclose(clnt_read);
-    
-    printf("id : %s\n",user.id);
+        char ss[BUF_SIZE]; 
+        read(clnt_sock,ss,sizeof(ss));
+        printf("%s",ss);
+        write(clnt_sock,response_packet,sizeof(response_packet));
+        printf("%s\n",response_packet);
+        puts("ok sent");
+        puts("BSBS");
+//	sleep(5);
+	close(clnt_sock);
+
+//     http_request_line_t req_line= {0,};
+//     http_header_fields_t fields = {0,};
+//     user_info user={0,};
+//     chat chatinfo={0,};
+//     FILE* clnt_read;
+//     FILE* clnt_write;
+//     char buf[BUF_SIZE];
+//     char header[BUF_SIZE];
+//     char message[5120];
+//     char ct[15];
+//  
+//     clnt_read = fdopen(clnt_sock, "r");
+//     clnt_write = fdopen(dup(clnt_sock), "w");
+//     while(1)
+//     {
+//         fgets(buf,BUF_SIZE,clnt_read);
+//         strcat(header,buf);
+//         printf("%s",header);
+//         if((strstr(buf,"\r\n\r\n"))==NULL)
+//             break;
+//     }
+//     fputs("c",stdout);
+//  //   while(1)
+//  //   {
+//         fscanf(clnt_read,"%s",message);
+//         puts("message read");
+// //        if(feof(clnt_read))
+// //            break;
+// //    }
+//     printf("%s",message);
+//     parseHttpHeader(parseHttpRequestLine(header, &req_line), &fields);
+//     parse_message(message, &user, &chatinfo);
+//     printf("a");
+//     strcpy(ct, content_type(header));
+//     fclose(clnt_read);
+//     
+//     printf("id : %s\n",user.id);
 
   //  send_data(clnt_write, ct, req_line.uri);
 }
