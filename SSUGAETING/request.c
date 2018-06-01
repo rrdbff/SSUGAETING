@@ -22,6 +22,8 @@ void* request_handler(void *arg)
         printf("%s\n",response_packet);
         puts("ok sent");
         puts("BSBS");
+	close(clnt_sock);
+	exit(0);
 //     http_request_line_t req_line= {0,};
 //     http_header_fields_t fields = {0,};
 //     user_info user={0,};
