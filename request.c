@@ -13,44 +13,56 @@
 
 void* request_handler(void *arg)
 {
+    char response_packet[1024] = "HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nOK&";
     int clnt_sock=*((int*)arg);
-    http_request_line_t req_line= {0,};
-    http_header_fields_t fields = {0,};
-    user_info user={0,};
-    chat chatinfo={0,};
-    FILE* clnt_read;
-    FILE* clnt_write;
-    char buf[BUF_SIZE];
-    char header[BUF_SIZE];
-    char message[BUF_SIZE];
-    char ct[15];
+        char ss[BUF_SIZE]; 
+        read(clnt_sock,ss,sizeof(ss));
+        printf("%s",ss);
+        write(clnt_sock,response_packet,sizeof(response_packet));
+        printf("%s\n",response_packet);
+        puts("ok sent");
+        puts("BSBS");
+//	sleep(5);
+	close(clnt_sock);
 
-    clnt_read = fdopen(clnt_sock, "r");
-    clnt_write = fdopen(dup(clnt_sock), "w");
-    while(1)
-    {
-        fgets(buf,BUF_SIZE,clnt_read);
-        strcat(header,buf);
-        if(strstr(buf,"\r\n\r\n"))
-            break;
-    }
-    while(1)
-    {
-        fscanf_s(clnt_read,"%s",&message,SMALL_BUF);
-        if(feof(clnt_read))
-            break;user.major= strtok(NULL,"$");
-    }
-    parseHttpHeader(parseHttpRequestLine(header, &req_line), &fields);
-    parse_message(message, &user, &chatinfo);
+//     http_request_line_t req_line= {0,};
+//     http_header_fields_t fields = {0,};
+//     user_info user={0,};
+//     chat chatinfo={0,};
+//     FILE* clnt_read;
+//     FILE* clnt_write;
+//     char buf[BUF_SIZE];
+//     char header[BUF_SIZE];
+//     char message[5120];
+//     char ct[15];
+//  
+//     clnt_read = fdopen(clnt_sock, "r");
+//     clnt_write = fdopen(dup(clnt_sock), "w");
+//     while(1)
+//     {
+//         fgets(buf,BUF_SIZE,clnt_read);
+//         strcat(header,buf);
+//         printf("%s",header);
+//         if((strstr(buf,"\r\n\r\n"))==NULL)
+//             break;
+//     }
+//     fputs("c",stdout);
+//  //   while(1)
+//  //   {
+//         fscanf(clnt_read,"%s",message);
+//         puts("message read");
+// //        if(feof(clnt_read))
+// //            break;
+// //    }
+//     printf("%s",message);
+//     parseHttpHeader(parseHttpRequestLine(header, &req_line), &fields);
+//     parse_message(message, &user, &chatinfo);
+//     printf("a");
+//     strcpy(ct, content_type(header));
+//     fclose(clnt_read);
+//     
+//     printf("id : %s\n",user.id);
 
-    strcpy(ct, content_type(header));
-    fclose(clnt_read);
-    
-    printf("id : %s\n"
-           "pw : %s\n"
-           "name : %s\n"
-           "email : %s\n"
-           "sex : %s\n",user.id,user.password,user.name,user.email,user.sex);
   //  send_data(clnt_write, ct, req_line.uri);
 }
 
@@ -70,7 +82,7 @@ void send_data(FILE* fp, char* ct, char* file_name)
         send_error(fp);
         return;
     }
-                chatinfo->s_id
+
     fputs(protocol,fp);
     fputs(server,fp);
     fputs(cnt_len,fp);
@@ -196,7 +208,7 @@ void parse_message(char* message, user_info* user, chat* chatinfo)
             {
                 printf("file create fail");
             }
-        case '9':       //chat : send txt
+  //      case '9':       //chat : send txt
     }
 }
 
