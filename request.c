@@ -62,8 +62,9 @@ void* request_handler(void *arg)
     //char b[1024]="HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nOK&";
      ssize_t writelen;
      ssize_t packetlen;
+     char* respons = response_packet;
     write(clnt_sock,response_packet,sizeof(response_packet));
-    packetlen=strlen(response_packet);
+    packetlen=strlen(respons);
     printf("%zd\n",writelen);
     printf("%zd\n",packetlen);
     puts(response_packet);
@@ -156,6 +157,7 @@ void parse_message(char* message, user_info* user, chat* chatinfo, char* respons
 //    puts(admin.password);
     user_info temp = {0,};
     int numchattingroom=0;
+    int dbputok=0;
 //    puts(message[7]);
 //    char * emp;
   //  emp = strstr(message,"header=");
@@ -165,8 +167,13 @@ void parse_message(char* message, user_info* user, chat* chatinfo, char* respons
         case '0' :      //id repetition check message
             strcpy(header , strtok(message,"$"));
             strcpy(user->id, strtok(NULL,"$"));
-            sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nOK&");
+            int sameidexist=1;
+            if(sameidexist==0)
+                sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nFAIL&");
+            else
+                sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nOK&");
             puts(response_packet);
+            
             break;
         case '1' :      //create account message
             strcpy(header , strtok(message,"$"));
@@ -291,18 +298,20 @@ void parse_message(char* message, user_info* user, chat* chatinfo, char* respons
                     strcpy(usersfromDB[i].milserv,user->milserv);
                 }
                 char asdf[1024];
-
+                char endtoken[20]="&";
                 //int size=strlen(asdf);
                 strcpy(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 1024\r\nContent-Type:text/plain\r\n\r\n");
-                for (int i =0;i<numfilteredusers;i++)
+                for (int i =0;i<1;i++)
                 {
                     sprintf(asdf,"%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s|",usersfromDB[i].id,usersfromDB[i].password,usersfromDB[i].email,usersfromDB[i].name,usersfromDB[i].sex,usersfromDB[i].statusmsg,usersfromDB[i].age,usersfromDB[i].height,usersfromDB[i].address,usersfromDB[i].hobby,usersfromDB[i].college,usersfromDB[i].major,usersfromDB[i].imageURL,usersfromDB[i].religion,usersfromDB[i].club,usersfromDB[i].abroadexp,usersfromDB[i].milserv);
 
                     if(strcat(response_packet,asdf)==NULL)
                         error_handling("strcat() error in response_packet for filter\n");
+
                 }
-                 if(strncat(response_packet,"&",1)==NULL)
-                        error_handling("strcat() error in response_packet for filter\n");
+                puts(response_packet);
+                if(strncat(response_packet,endtoken,1)==NULL)
+                    error_handling("strcat() error in response_packet for chattinglist\n");
             }
             break;
         case '7' :      //current chatting list message
@@ -351,44 +360,77 @@ void parse_message(char* message, user_info* user, chat* chatinfo, char* respons
                 }
 
                 
-//                 if(strcat(response_packet,endtoken)==NULL)
-//                     error_handling("strcat() error in response_packet for chattinglist\n");
+                if(strncat(response_packet,endtoken,1)==NULL)
+                    error_handling("strcat() error in response_packet for chattinglist\n");
             }
             break;
         case '8' :      //chatting accept request message
             strcpy(header, strtok(message,"$"));
             strcpy(chatinfo->s_id,strtok(NULL,"$"));
             strcpy(chatinfo->d_id,strtok(NULL,"$"));
+            dbputok=1;
             //PUT DB this information. with name " WAITING QUEUE"
+            if (dbputok==0)
+                sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nFAIL&");
+            else
+                sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nOK&");
             break;
         case '9' :      //chatting accept response message
             strcpy(header, strtok(message,"$"));
             strcpy(chatinfo->s_id,strtok(NULL,"$"));
             strcpy(chatinfo->d_id,strtok(NULL,"$"));
             strcpy(chatinfo->acceptance,strtok(NULL,"$"));
+            
+            dbputok=1; //CHANGE DB : change table of the connection info above. "WAITING QUEUE" to "CHATTING LIST"
+            if (dbputok==0)
+                sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nFAIL&");
+            else
+                sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nOK&");
             break;
             
-        case 'a' :      //chatting accept request pulling
+        case 'a' :      //chat : send txt
+            strcpy(header,strtok(message,"$"));
+            strcpy(chatinfo->s_id,strtok(NULL,"$"));
+            strcpy(chatinfo->d_id,strtok(NULL,"$"));
+            strcpy(chatinfo->textmsg,strtok(NULL,"$"));
+            //put information to DB and raise count of unread msg;
+            dbputok=1; 
+            if (dbputok==0)
+                sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nFAIL&");
+            else
+                sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nOK&");
             break;
-        case 'b' :      //update profile message
+        case 'b' :      //chat : send image
+            strcpy(header,strtok(message,"$"));
+            break;
+        case 'c' :      //update profile message
+            
             strcpy(header, strtok(message,"$"));   
-            strcpy(user->id,strtok(NULL,"$"));
-            strcpy(user->password,strtok(NULL,"$"));
-            strcpy(user->email, strtok(NULL,"$"));
-            strcpy(user->name, strtok(NULL,"$"));
-            strcpy(user->sex, strtok(NULL,"$"));
-            strcpy(user->statusmsg, strtok(NULL,"$"));
-            strcpy(user->age, strtok(NULL,"$"));
-            strcpy(user->height, strtok(NULL,"$"));
-            strcpy(user->address, strtok(NULL,"$"));
-            strcpy(user->hobby, strtok(NULL,"$"));
-            strcpy(user->college, strtok(NULL,"$"));
-            strcpy(user->major, strtok(NULL,"$"));
-            strcpy(user->imageURL, strtok(NULL,"$"));
-            strcpy(user->religion, strtok(NULL,"$"));
-            strcpy(user->club, strtok(NULL,"$"));
-            strcpy(user->abroadexp, strtok(NULL,"$"));
-            strcpy(user->milserv, strtok(NULL,"$"));
+            user_info newuserinfo={0,};
+            strcpy(newuserinfo.id,strtok(NULL,"$"));
+            strcpy(newuserinfo.password,strtok(NULL,"$"));
+            strcpy(newuserinfo.email, strtok(NULL,"$"));
+            strcpy(newuserinfo.name, strtok(NULL,"$"));
+            strcpy(newuserinfo.sex, strtok(NULL,"$"));
+            strcpy(newuserinfo.statusmsg, strtok(NULL,"$"));
+            strcpy(newuserinfo.age, strtok(NULL,"$"));
+            strcpy(newuserinfo.height, strtok(NULL,"$"));
+            strcpy(newuserinfo.address, strtok(NULL,"$"));
+            strcpy(newuserinfo.hobby, strtok(NULL,"$"));
+            strcpy(newuserinfo.college, strtok(NULL,"$"));
+            strcpy(newuserinfo.major, strtok(NULL,"$"));
+            strcpy(newuserinfo.imageURL, strtok(NULL,"$"));
+            strcpy(newuserinfo.religion, strtok(NULL,"$"));
+            strcpy(newuserinfo.club, strtok(NULL,"$"));
+            strcpy(newuserinfo.abroadexp, strtok(NULL,"$"));
+            strcpy(newuserinfo.milserv, strtok(NULL,"$"));
+            //put DB new information
+            
+            int dbputok=1; 
+            if (dbputok==0)
+                sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nFAIL&");
+            else
+                sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nOK&");
             break;
 //         case '9' :      //chat : send image
 //             header = strtok(message,"$");
@@ -421,3 +463,5 @@ void parse_message(char* message, user_info* user, chat* chatinfo, char* respons
 //     strncpy(result,temp,(endofstr-temp)/4);
 //     return result;
 // }
+
+
