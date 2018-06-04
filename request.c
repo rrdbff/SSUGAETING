@@ -10,10 +10,11 @@
 
 #define BUF_SIZE 2048
 #define SMALL_BUF 128
+// char* Tokenizer(char* original, char* search, char token);
+
 
 void* request_handler(void *arg)
 {
-    char response_packet[1024] = "HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nOK&";
     int clnt_sock=*((int*)arg);
 //         char ss[BUF_SIZE]; 
 //         read(clnt_sock,ss,sizeof(ss));
@@ -24,55 +25,61 @@ void* request_handler(void *arg)
 //         puts("BSBS");
     http_request_line_t req_line= {0,};
     http_header_fields_t fields = {0,};
-    user_info user={0,};
+    static user_info user={"ad","1","name","ad@gmail.com","sex","age","imageURL","statusmsg","height","address","major","religion","hobby","college","club","abroadexp","milserv"};
     chat chatinfo={0,};
     FILE* clnt_read;
     FILE* clnt_write;
-    char buf[BUF_SIZE];
-    char header[BUF_SIZE];
-    char message[5120];
+    char buf[BUF_SIZE]={0,};
+    char header[5120]={0,};
+    char message[102400]={0,};
     char ct[15];
- 
-    clnt_read = fdopen(clnt_sock, "r");
-    clnt_write = fdopen(dup(clnt_sock), "w");
-    while(1)
-    {
-        fgets(buf,BUF_SIZE,clnt_read);
-        strcat(header,buf);
-        printf("%s",header);
-        if((strstr(buf,"\r\n\r\n"))==NULL)
-            break;
-    }
-    fputs("c",stdout);
-   while(1)
-   {
-        fscanf(clnt_read,"%s",message);
-        puts("message read");
-       if(feof(clnt_read))
-           break;
-   }
-    printf("%s",message);
-    parseHttpHeader(parseHttpRequestLine(header, &req_line), &fields);
-    parse_message(message, &user, &chatinfo);
-    printf("a");
-    strcpy(ct, content_type(header));
-    fclose(clnt_read);
+    char response_packet[5120] ={0,};
+     
+    read(clnt_sock,header,sizeof(header));
     
-    printf("id : %s\n",user.id);
+    puts(header);
+//     clnt_read = fdopen(clnt_sock, "r");
+  //   clnt_write = fdopen(clnt_sock, "w");
+//     while(1)
+//     {
+//         fgets(buf,BUF_SIZE,clnt_read);
+//         strcat(header,buf);
+//     
+//         if((strstr(buf,"&"))!=NULL)
+//             break;
+//     }
 
-  //  send_data(clnt_write, ct, req_line.uri);
+    char* a = strtok(header,"&");
+
+
+    strcpy(message,strtok(NULL,"&"));  
+
+
+     parseHttpHeader(parseHttpRequestLine(header, &req_line), &fields);
+     
+     parse_message(message, &user, &chatinfo, response_packet);
+
+    //char b[1024]="HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nOK&";
+     ssize_t writelen;
+     ssize_t packetlen;
+    write(clnt_sock,response_packet,sizeof(response_packet));
+    packetlen=strlen(response_packet);
+    printf("%zd\n",writelen);
+    printf("%zd\n",packetlen);
+    puts(response_packet);
+//    send_data(clnt_write,"text/plain", req_line.uri);
+     close(clnt_sock);
+
 }
-
 void send_data(FILE* fp, char* ct, char* file_name)
 {
-    char protocol[]="HTTP/1.0 200 OK\r\n";
-    char server[]="Server:Linux Web Server \r\n";
-    char cnt_len[]= "Content-length:2048\r\n";
-    char cnt_type[SMALL_BUF];
-    char buf[BUF_SIZE];
+   char protocol[]="HTTP/1.0 200 OK\r\n";
+   char server[]="Server:Linux Web Server \r\n";
+   char cnt_len[]= "Content-length:2048\r\n";
+   char cnt_type[SMALL_BUF];
+    char buf[BUF_SIZE]="HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nOK&";
     FILE* send_file;
-    
-    sprintf(cnt_type, "Content-type:%s\r\n\r\n",ct);
+   sprintf(cnt_type, "Content-type:%s\r\n\r\n",ct);
     send_file=fopen(file_name,"r");
     if(send_file==NULL)
     {
@@ -81,15 +88,16 @@ void send_data(FILE* fp, char* ct, char* file_name)
     }
 
     fputs(protocol,fp);
-    fputs(server,fp);
-    fputs(cnt_len,fp);
-    fputs(cnt_type,fp);
+   fputs(server,fp);
+   fputs(cnt_len,fp);
+   fputs(cnt_type,fp);
     
-    while(fgets(buf,BUF_SIZE,send_file)!=NULL)
-    {
+//     while(fgets(buf,BUF_SIZE,send_file)!=NULL)
+//     {
         fputs(buf,fp);
+        puts(buf);
         fflush(fp);
-    }
+//     }
     fflush(fp);
     fclose(fp);
     
@@ -112,7 +120,10 @@ char* content_type(char* file)
         return "text/plain";
     
 }
-
+//         case '2' :      //login id/pw message
+//             header = strtok(message,"$");
+//             user->id = strtok(NULL,"$");
+//             user->password = strtok(NULL,"$");
 void send_error(FILE* fp)
 {
     char protocol[]="HTTP/1.0 400 Bad Request\r\n";
@@ -135,77 +146,278 @@ void error_handling(char* message)
     exit(1);
 }
 
-void parse_message(char* message, user_info* user, chat* chatinfo)
+void parse_message(char* message, user_info* user, chat* chatinfo, char* response_packet)
 {
-    char* header;
+    puts (message);
+    char header[10];
+    filteringinfo filter={" "," "," "," "," "," "," "," "," "," "," "};
+//    user_info admin = {"ad","1",0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+//    puts(admin.id);
+//    puts(admin.password);
+    user_info temp = {0,};
+    int numchattingroom=0;
+//    puts(message[7]);
+//    char * emp;
+  //  emp = strstr(message,"header=");
+ //   putc(emp[7],stdout);
     switch(message[0])
     {
         case '0' :      //id repetition check message
-            header = strtok(message,"$");
-            user->id = strtok(NULL,"$");
-        
+            strcpy(header , strtok(message,"$"));
+            strcpy(user->id, strtok(NULL,"$"));
+            sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nOK&");
+            puts(response_packet);
+            break;
         case '1' :      //create account message
-            header = strtok(message,"$");
-            user->id = strtok(NULL,"$");
-            user->password = strtok(NULL,"$");
-            user->name =strtok(NULL,"$");
-            user->email = strtok(NULL,"$");
-            user->sex = strtok(NULL,"$");
+            strcpy(header , strtok(message,"$"));
+            strcpy(user->id ,strtok(NULL,"$"));
+            strcpy(user->password , strtok(NULL,"$"));
+            strcpy(user->name ,strtok(NULL,"$"));
+            strcpy(user->email , strtok(NULL,"$"));
+            strcpy(user->sex , strtok(NULL,"$"));
+            sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nOK&");
+            puts(response_packet);
+            break;
         case '2' :      //login id/pw message
-            header = strtok(message,"$");
-            user->id = strtok(NULL,"$");
-            user->password = strtok(NULL,"$");
-        case '3' :      //email check message to find id
-            header = strtok(message,"$");
-            user->email = strtok(NULL,"$");
-        case '4' :      //email/id check message to find pw
-            header = strtok(message,"$");
-            user->id = strtok(NULL,"$");
-            user->email = strtok(NULL,"$");
-        case '5' :      //user matching request message
-            header = strtok(message,"$");
-            chatinfo->s_id = strtok(NULL,"$");
-            chatinfo->d_id = strtok(NULL,"$");
-        case '6' :      //user matching response message
-            header = strtok(message,"$");
-            chatinfo->s_id = strtok(NULL,"$");
-            chatinfo->d_id = strtok(NULL,"$");
-            chatinfo->acceptance = strtok(NULL,"$");
-        case '7' :      //update profile message
-            header = strtok(message,"$");   
-            user->id=strtok(NULL,"$");
-            user->password=strtok(NULL,"$");
-            user->email= strtok(NULL,"$");
-            user->name= strtok(NULL,"$");
-            user->sex= strtok(NULL,"$");
-            user->statusmsg= strtok(NULL,"$");
-            user->age= strtok(NULL,"$");
-            user->height= strtok(NULL,"$");
-            user->address= strtok(NULL,"$");
-            user->hobby= strtok(NULL,"$");
-            user->college= strtok(NULL,"$");
-            user->major= strtok(NULL,"$");
-            user->imageURL= strtok(NULL,"$");
-            user->religion= strtok(NULL,"$");
-            user->club= strtok(NULL,"$");
-            user->abroadexp= strtok(NULL,"$");
-            user->milserv= strtok(NULL,"$");
-        case '8' :      //chat : send image
-            header = strtok(message,"$");
-            chatinfo->s_id = strtok(NULL,"$");
-            chatinfo->d_id = strtok(NULL,"$");
-            int fd;
-            char* temp=strtok(NULL,"$");
-            if (0<(fd=creat("image.jpg",0644)))
+            
+            strcpy(header , strtok(message,"$"));
+            strcpy(temp.id , strtok(NULL,"$"));
+            
+            puts(temp.id);
+            strcpy(temp.password , strtok(NULL,"$"));
+            puts(temp.password);
+            if (!strcmp(temp.id,user->id))
             {
-                write(fd,temp,strlen(temp));
-                close(fd);
+                if(!strcmp(temp.password,user->password))
+                {
+                    char asdf[1024];
+                    puts("camein");
+                    sprintf(asdf,"%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s&",user->id,user->password,user->email,user->name,user->sex,user->statusmsg,user->age,user->height,user->address,user->hobby,user->college,user->major,user->imageURL,user->religion,user->club,user->abroadexp,user->milserv);
+                    int len = strlen(asdf);
+                    sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: %d\r\nContent-Type:text/plain\r\n\r\n%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s&",len,user->id,user->password,user->email,user->name,user->sex,user->statusmsg,user->age,user->height,user->address,user->hobby,user->college,user->major,user->imageURL,user->religion,user->club,user->abroadexp,user->milserv);
+                    puts(response_packet);
+                }
+                else
+                    sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nFAIL&");
             }
             else
+                sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nFAIL&");
+            break;
+        case '3' :      //email check message to find id
+            strcpy(header, strtok(message,"$"));
+            strcpy(temp.email, strtok(NULL,"$"));
+            if (!strcmp(temp.email,user->email))
+                {
+                    char asdf[1024];
+                    puts("camein");
+                    sprintf(asdf,"%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s&",user->id,user->password,user->email,user->name,user->sex,user->statusmsg,user->age,user->height,user->address,user->hobby,user->college,user->major,user->imageURL,user->religion,user->club,user->abroadexp,user->milserv);
+                    int len = strlen(asdf);
+                    sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: %d\r\nContent-Type:text/plain\r\n\r\n%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s&",len,user->id,user->password,user->email,user->name,user->sex,user->statusmsg,user->age,user->height,user->address,user->hobby,user->college,user->major,user->imageURL,user->religion,user->club,user->abroadexp,user->milserv);
+                    puts(response_packet);
+                }
+            else
+                sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nFAIL&");
+            break;
+        case '4' :      //email/id check message to find pw
+            strcpy(header, strtok(message,"$"));
+            strcpy(temp.id, strtok(NULL,"$"));
+            strcpy(temp.email, strtok(NULL,"$"));
+            if (!strcmp(temp.id,user->id))
             {
-                printf("file create fail");
+                if(!strcmp(temp.email,user->email))
+                {
+                    char asdf[1024];
+                    puts("camein");
+                    sprintf(asdf,"%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s&",user->id,user->password,user->email,user->name,user->sex,user->statusmsg,user->age,user->height,user->address,user->hobby,user->college,user->major,user->imageURL,user->religion,user->club,user->abroadexp,user->milserv);
+                    int len = strlen(asdf);
+                    sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: %d\r\nContent-Type:text/plain\r\n\r\n%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s&",len,user->id,user->password,user->email,user->name,user->sex,user->statusmsg,user->age,user->height,user->address,user->hobby,user->college,user->major,user->imageURL,user->religion,user->club,user->abroadexp,user->milserv);
+                    puts(response_packet);
+                }
+                else
+                    sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nFAIL&");
             }
+            else
+                sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nFAIL&");
+            break;
+            
+        case '5' :      //new password setting
+            strcpy(header, strtok(message,"$"));
+            strcpy(user->id, strtok(NULL,"$"));
+            strcpy(user->password, strtok(NULL,"$"));
+            sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nOK&");
+            break;
+
+        case '6' :      //filter information message   
+            strcpy(header, strtok(message,"$"));
+            strcpy(filter.mysex,strtok(NULL,"$"));
+            strcpy(filter.fromage,strtok(NULL,"$"));
+            strcpy(filter.toage,strtok(NULL,"$"));
+            strcpy(filter.heightfrom,strtok(NULL,"$"));
+            strcpy(filter.heightto,strtok(NULL,"$"));
+            strcpy(filter.religion,strtok(NULL,"$"));
+            strcpy(filter.hobby,strtok(NULL,"$"));
+            strcpy(filter.college,strtok(NULL,"$"));
+            strcpy(filter.club,strtok(NULL,"$"));
+            strcpy(filter.abroadexp,strtok(NULL,"$"));
+            strcpy(filter.milserv,strtok(NULL,"$"));
+            //lookup DB with filter information
+            int numfilteredusers=0;
+            numfilteredusers = 1; // enter #num of filtered users which are to send back as response_packet
+            
+            if (numfilteredusers==0)
+                sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nFAIL&");
+            else
+            {
+                //put all info to "user_info usersfromDB"
+                user_info usersfromDB[numfilteredusers];
+                for (int i=0;i<numfilteredusers;i++)// "CHANGE IF DB IS IMPLEMENTED"
+                {
+                    strcpy(usersfromDB[i].id,user->id);
+                    strcpy(usersfromDB[i].password,user->password);
+                    strcpy(usersfromDB[i].email,user->email);
+                    strcpy(usersfromDB[i].name,user->name);
+                    strcpy(usersfromDB[i].sex,user->sex);
+                    strcpy(usersfromDB[i].statusmsg,user->statusmsg);
+                    strcpy(usersfromDB[i].age,user->age);
+                    strcpy(usersfromDB[i].height,user->height);
+                    strcpy(usersfromDB[i].address,user->address);
+                    strcpy(usersfromDB[i].hobby,user->hobby);
+                    strcpy(usersfromDB[i].college,user->college);
+                    strcpy(usersfromDB[i].major,user->major);
+                    strcpy(usersfromDB[i].imageURL,user->imageURL);
+                    strcpy(usersfromDB[i].religion,user->religion);
+                    strcpy(usersfromDB[i].club,user->club);
+                    strcpy(usersfromDB[i].abroadexp,user->abroadexp);
+                    strcpy(usersfromDB[i].milserv,user->milserv);
+                }
+                char asdf[1024];
+
+                //int size=strlen(asdf);
+                strcpy(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 1024\r\nContent-Type:text/plain\r\n\r\n");
+                for (int i =0;i<numfilteredusers;i++)
+                {
+                    sprintf(asdf,"%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s|",usersfromDB[i].id,usersfromDB[i].password,usersfromDB[i].email,usersfromDB[i].name,usersfromDB[i].sex,usersfromDB[i].statusmsg,usersfromDB[i].age,usersfromDB[i].height,usersfromDB[i].address,usersfromDB[i].hobby,usersfromDB[i].college,usersfromDB[i].major,usersfromDB[i].imageURL,usersfromDB[i].religion,usersfromDB[i].club,usersfromDB[i].abroadexp,usersfromDB[i].milserv);
+
+                    if(strcat(response_packet,asdf)==NULL)
+                        error_handling("strcat() error in response_packet for filter\n");
+                }
+                 if(strncat(response_packet,"&",1)==NULL)
+                        error_handling("strcat() error in response_packet for filter\n");
+            }
+            break;
+        case '7' :      //current chatting list message
+            strcpy(header, strtok(message,"$"));
+                        //get chatting lists from DB and save profile data to user_info for every chattingroom
+            numchattingroom = 1; //count number of chattingrooms in possession "CHANGE IF DB IS IMPLEMENTED"
+          
+            if (numchattingroom==0)
+                sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nFAIL&");
+            else
+            {
+                //put all info to "user_info usersfromDB"
+                user_info usersfromDB[numchattingroom];
+                
+                for (int i=0;i<numchattingroom;i++)// "CHANGE IF DB IS IMPLEMENTED"
+                {
+                    strcpy(usersfromDB[i].id,user->id);
+                    strcpy(usersfromDB[i].password,user->password);
+                    strcpy(usersfromDB[i].email,user->email);
+                    strcpy(usersfromDB[i].name,user->name);
+                    strcpy(usersfromDB[i].sex,user->sex);
+                    strcpy(usersfromDB[i].statusmsg,user->statusmsg);
+                    strcpy(usersfromDB[i].age,user->age);
+                    strcpy(usersfromDB[i].height,user->height);
+                    strcpy(usersfromDB[i].address,user->address);
+                    strcpy(usersfromDB[i].hobby,user->hobby);
+                    strcpy(usersfromDB[i].college,user->college);
+                    strcpy(usersfromDB[i].major,user->major);
+                    strcpy(usersfromDB[i].imageURL,user->imageURL);
+                    strcpy(usersfromDB[i].religion,user->religion);
+                    strcpy(usersfromDB[i].club,user->club);
+                    strcpy(usersfromDB[i].abroadexp,user->abroadexp);
+                    strcpy(usersfromDB[i].milserv,user->milserv);
+                }
+                char messagepart[1024];
+                char endtoken[20]="&";
+               // int size=strlen(messagepart);
+                strcpy(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 1024\r\nContent-Type:text/plain\r\n\r\n");
+                for (int i =0;i<numchattingroom;i++)
+                {
+                    sprintf(messagepart,"%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$1|",usersfromDB[i].id,usersfromDB[i].password,usersfromDB[i].email,usersfromDB[i].name,usersfromDB[i].sex,usersfromDB[i].statusmsg,usersfromDB[i].age,usersfromDB[i].height,usersfromDB[i].address,usersfromDB[i].hobby,usersfromDB[i].college,usersfromDB[i].major,usersfromDB[i].imageURL,usersfromDB[i].religion,usersfromDB[i].club,usersfromDB[i].abroadexp,usersfromDB[i].milserv);
+                    
+                    puts("PASS\n");
+                    if(strcat(response_packet,messagepart)==NULL)
+                        error_handling("strcat() error in response_packet for chattinglist\n");
+                }
+
+                
+//                 if(strcat(response_packet,endtoken)==NULL)
+//                     error_handling("strcat() error in response_packet for chattinglist\n");
+            }
+            break;
+        case '8' :      //chatting accept request message
+            strcpy(header, strtok(message,"$"));
+            strcpy(chatinfo->s_id,strtok(NULL,"$"));
+            strcpy(chatinfo->d_id,strtok(NULL,"$"));
+            //PUT DB this information. with name " WAITING QUEUE"
+            break;
+        case '9' :      //chatting accept response message
+            strcpy(header, strtok(message,"$"));
+            strcpy(chatinfo->s_id,strtok(NULL,"$"));
+            strcpy(chatinfo->d_id,strtok(NULL,"$"));
+            strcpy(chatinfo->acceptance,strtok(NULL,"$"));
+            break;
+            
+        case 'a' :      //chatting accept request pulling
+            break;
+        case 'b' :      //update profile message
+            strcpy(header, strtok(message,"$"));   
+            strcpy(user->id,strtok(NULL,"$"));
+            strcpy(user->password,strtok(NULL,"$"));
+            strcpy(user->email, strtok(NULL,"$"));
+            strcpy(user->name, strtok(NULL,"$"));
+            strcpy(user->sex, strtok(NULL,"$"));
+            strcpy(user->statusmsg, strtok(NULL,"$"));
+            strcpy(user->age, strtok(NULL,"$"));
+            strcpy(user->height, strtok(NULL,"$"));
+            strcpy(user->address, strtok(NULL,"$"));
+            strcpy(user->hobby, strtok(NULL,"$"));
+            strcpy(user->college, strtok(NULL,"$"));
+            strcpy(user->major, strtok(NULL,"$"));
+            strcpy(user->imageURL, strtok(NULL,"$"));
+            strcpy(user->religion, strtok(NULL,"$"));
+            strcpy(user->club, strtok(NULL,"$"));
+            strcpy(user->abroadexp, strtok(NULL,"$"));
+            strcpy(user->milserv, strtok(NULL,"$"));
+            break;
+//         case '9' :      //chat : send image
+//             header = strtok(message,"$");
+//             chatinfo->s_id = strtok(NULL,"$");
+//             chatinfo->d_id = strtok(NULL,"$");
+//             int fd;
+//             char* temp=strtok(NULL,"$");
+//             if (0<(fd=creat("image.jpg",0644)))
+//             {
+//                 write(fd,temp,strlen(temp));
+//                 close(fd);
+//             }
+//             else
+//             {
+//                 printf("file create fail");
+//             }
   //      case '9':       //chat : send txt
     }
 }
 
+
+// char* Tokenizer(char* original, char* search, char token)
+// {
+//     char* result;
+//     char* temp;
+//     char* endofstr;
+//     temp = strstr(original,search);
+//     endofstr = strchr(temp,token);
+//     
+//     strncpy(result,temp,(endofstr-temp)/4);
+//     return result;
+// }
