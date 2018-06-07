@@ -157,7 +157,9 @@ void parse_message(char* message, user_info* user, chat* chatinfo, char* respons
 //    puts(admin.password);
     user_info temp = {0,};
     int numchattingroom=0;
+    int numwaitingQ=0;
     int dbputok=0;
+    
 //    puts(message[7]);
 //    char * emp;
   //  emp = strstr(message,"header=");
@@ -316,17 +318,55 @@ void parse_message(char* message, user_info* user, chat* chatinfo, char* respons
             break;
         case '7' :      //current chatting list message
             strcpy(header, strtok(message,"$"));
+            strcpy(user->id,strtok(message,"$"));
                         //get chatting lists from DB and save profile data to user_info for every chattingroom
             numchattingroom = 1; //count number of chattingrooms in possession "CHANGE IF DB IS IMPLEMENTED"
-          
+            
             if (numchattingroom==0)
                 sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nFAIL&");
             else
             {
                 //put all info to "user_info usersfromDB"
                 user_info usersfromDB[numchattingroom];
-                
-                for (int i=0;i<numchattingroom;i++)// "CHANGE IF DB IS IMPLEMENTED"
+                int unreadmsg[numchattingroom]; //get unread msg from 
+                int a=0;
+                for (int i=0 ;i<numchattingroom;i++)// "CHANGE IF DB IS IMPLEMENTED"
+                {
+                    strcpy(usersfromDB[i].id,user->id);
+                    strcpy(usersfromDB[i].password,user->password);
+                    strcpy(usersfromDB[i].email,user->email);
+                    strcpy(usersfromDB[i].name,user->name);
+                    strcpy(usersfromDB[i].sex,user->sex);
+                    strcpy(usersfromDB[i].statusmsg,user->statusmsg);
+                    strcpy(usersfromDB[i].age,user->age);
+                    strcpy(usersfromDB[i].height,user->height);
+                    strcpy(usersfromDB[i].address,user->address);
+                    strcpy(usersfromDB[i].hobby,user->hobby);
+                    strcpy(usersfromDB[i].college,user->college);
+                    strcpy(usersfromDB[i].major,user->major);
+                    strcpy(usersfromDB[i].imageURL,user->imageURL);
+                    strcpy(usersfromDB[i].religion,user->religion);
+                    strcpy(usersfromDB[i].club,user->club);
+                    strcpy(usersfromDB[i].abroadexp,user->abroadexp);
+                    strcpy(usersfromDB[i].milserv,user->milserv);
+                    unreadmsg[i]=a;
+                }
+                char messagepart[1024];
+                char endtoken[20]="&";
+               // int size=strlen(messagepart);
+                strcpy(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 1024\r\nContent-Type:text/plain\r\n\r\n");
+                for (int i =0;i<numchattingroom;i++)
+                {
+                    sprintf(messagepart,"%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%d|",usersfromDB[i].id,usersfromDB[i].password,usersfromDB[i].email,usersfromDB[i].name,usersfromDB[i].sex,usersfromDB[i].statusmsg,usersfromDB[i].age,usersfromDB[i].height,usersfromDB[i].address,usersfromDB[i].hobby,usersfromDB[i].college,usersfromDB[i].major,usersfromDB[i].imageURL,usersfromDB[i].religion,usersfromDB[i].club,usersfromDB[i].abroadexp,usersfromDB[i].milserv,unreadmsg[i]);
+                    
+                    puts("PASS\n");
+                    if(strcat(response_packet,messagepart)==NULL)
+                        error_handling("strcat() error in response_packet for chattinglist\n");
+                }
+                memset(messagepart,0,sizeof(messagepart));
+                numwaitingQ = 0;
+                // get profile information for all connection request in waiting queue that matches requesting ID(user->ID)
+                for (int i=0;i<numwaitingQ;i++)
                 {
                     strcpy(usersfromDB[i].id,user->id);
                     strcpy(usersfromDB[i].password,user->password);
@@ -346,10 +386,6 @@ void parse_message(char* message, user_info* user, chat* chatinfo, char* respons
                     strcpy(usersfromDB[i].abroadexp,user->abroadexp);
                     strcpy(usersfromDB[i].milserv,user->milserv);
                 }
-                char messagepart[1024];
-                char endtoken[20]="&";
-               // int size=strlen(messagepart);
-                strcpy(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 1024\r\nContent-Type:text/plain\r\n\r\n");
                 for (int i =0;i<numchattingroom;i++)
                 {
                     sprintf(messagepart,"%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$1|",usersfromDB[i].id,usersfromDB[i].password,usersfromDB[i].email,usersfromDB[i].name,usersfromDB[i].sex,usersfromDB[i].statusmsg,usersfromDB[i].age,usersfromDB[i].height,usersfromDB[i].address,usersfromDB[i].hobby,usersfromDB[i].college,usersfromDB[i].major,usersfromDB[i].imageURL,usersfromDB[i].religion,usersfromDB[i].club,usersfromDB[i].abroadexp,usersfromDB[i].milserv);
@@ -358,8 +394,6 @@ void parse_message(char* message, user_info* user, chat* chatinfo, char* respons
                     if(strcat(response_packet,messagepart)==NULL)
                         error_handling("strcat() error in response_packet for chattinglist\n");
                 }
-
-                
                 if(strncat(response_packet,endtoken,1)==NULL)
                     error_handling("strcat() error in response_packet for chattinglist\n");
             }
@@ -384,8 +418,12 @@ void parse_message(char* message, user_info* user, chat* chatinfo, char* respons
             dbputok=1; //CHANGE DB : change table of the connection info above. "WAITING QUEUE" to "CHATTING LIST"
             if (dbputok==0)
                 sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nFAIL&");
+            else if( strcmp("0",chatinfo->acceptance)==0)
+                sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nREJECT&");
+            else if( strcmp("1",chatinfo->acceptance)==0)
+                sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nACCEPT");
             else
-                sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nOK&");
+                sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nSENT_WRONG&");
             break;
             
         case 'a' :      //chat : send txt
@@ -402,6 +440,15 @@ void parse_message(char* message, user_info* user, chat* chatinfo, char* respons
             break;
         case 'b' :      //chat : send image
             strcpy(header,strtok(message,"$"));
+            strcpy(chatinfo->s_id,strtok(NULL,"$"));
+            strcpy(chatinfo->d_id,strtok(NULL,"$"));
+            strcpy(chatinfo->image,strtok(NULL,"$"));
+            //put information to DB and raise count of unread msg;
+            dbputok=1; 
+            if (dbputok==0)
+                sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nFAIL&");
+            else
+                sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nOK&");
             break;
         case 'c' :      //update profile message
             
@@ -432,22 +479,7 @@ void parse_message(char* message, user_info* user, chat* chatinfo, char* respons
             else
                 sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nOK&");
             break;
-//         case '9' :      //chat : send image
-//             header = strtok(message,"$");
-//             chatinfo->s_id = strtok(NULL,"$");
-//             chatinfo->d_id = strtok(NULL,"$");
-//             int fd;
-//             char* temp=strtok(NULL,"$");
-//             if (0<(fd=creat("image.jpg",0644)))
-//             {
-//                 write(fd,temp,strlen(temp));
-//                 close(fd);
-//             }
-//             else
-//             {
-//                 printf("file create fail");
-//             }
-  //      case '9':       //chat : send txt
+
     }
 }
 

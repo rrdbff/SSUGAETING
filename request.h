@@ -24,7 +24,8 @@ typedef struct chat{
     char d_id[15];
     char textmsg[1024];
     char acceptance[10];
-    FILE* image;
+    char image[100];
+    char time[11];
 }chat;
 typedef struct filteringinfo{
     char mysex[10];
