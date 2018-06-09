@@ -1,9 +1,9 @@
 #ifndef __REQUEST_H__
 #define __REQUEST_H__
 typedef struct user_info{
-    char id[15];
+    char id[20];
     char password[20];
-    char name[15];
+    char name[20];
     char email[30];
     char sex[10];
     char age[10];
@@ -25,7 +25,7 @@ typedef struct chat{
     char textmsg[1024];
     char acceptance[10];
     char image[100];
-    char time[11];
+    char time[20];
 }chat;
 typedef struct filteringinfo{
     char mysex[10];
