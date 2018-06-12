@@ -624,9 +624,9 @@ void parse_message(int clnt_sock,char* message, user_info* user, chat* chatinfo,
         case '7' :      //current chatting list message
             strcpy(header, strtok(message,"$"));
             strcpy(user->id,strtok(NULL,"$"));
-            
+            int nochat=1;
             sprintf(query, "SELECT * FROM chatroom WHERE id1 = '%s' or id2 = '%s'", user->id, user->id);
-            
+            strcpy(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 1024\r\nContent-Type:text/plain\r\n\r\n");
             if(mysql_query(&mysql, query))
 			{
 				printf("7 query failed...\n");
@@ -641,14 +641,13 @@ void parse_message(int clnt_sock,char* message, user_info* user, chat* chatinfo,
           		if(fields == 0)
           		{
           			printf("no data found in DB (no chatroom)\n");
-                    sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nFAIL&");
+                    nochat =0;
 				}
 				else
                 {
                     printf("how many chatroom : %d\n", fields);
                             //put all info to "user_info usersfromDB"
                     user_info usersfromDB[fields];
-                    strcpy(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 1024\r\nContent-Type:text/plain\r\n\r\n");
                     
                     sprintf(query, "SELECT * FROM profile WHERE ");
                     
@@ -657,13 +656,11 @@ void parse_message(int clnt_sock,char* message, user_info* user, chat* chatinfo,
                         if(strcmp(sql_row[0],user->id))
                         {
                             sprintf(tempbuf,"id = '%s' or ", sql_row[0]);
-                            printf("%s",tempbuf);
                             strncat(query,tempbuf,strlen(tempbuf));
                         }
                         else
                         {
                             sprintf(tempbuf,"id = '%s' or ", sql_row[1]);
-                            printf("%s",tempbuf);
                             strncat(query,tempbuf,strlen(tempbuf));
                         }
                     }
@@ -726,6 +723,110 @@ void parse_message(int clnt_sock,char* message, user_info* user, chat* chatinfo,
             }
             
             
+            // GET INFORMATION FROM WAITING QUEUE
+            
+            
+            
+            
+            
+            
+            sprintf(query, "SELECT * FROM waitq WHERE sendid = '%s' or recvid = '%s'", user->id, user->id);
+            
+            if(mysql_query(&mysql, query))
+			{
+				printf("7 WAITING QUEUE query failed...\n");
+				printf("%s\n", mysql_error(&mysql));
+				exit(1);
+			}
+			else
+			{
+          		sql_res = mysql_store_result(&mysql);
+                fields = mysql_num_rows(sql_res);
+                
+          		if(fields == 0)
+          		{
+          			printf("no data found in DB (no WAITING QUEUE)\n");
+                    if(nochat ==0)
+                        sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nFAIL&");
+				}
+				else
+                {
+                    printf("HOW MANY WAITING : %d\n", fields);
+                            //put all info to "user_info usersfromDB"
+                    user_info usersfromDB[fields];
+                    
+                    sprintf(query, "SELECT * FROM profile WHERE ");
+                    
+                    while( (sql_row = mysql_fetch_row(sql_res)) != NULL)
+                    {
+                        if(strcmp(sql_row[0],user->id))
+                        {
+                            sprintf(tempbuf,"id = '%s' or ", sql_row[0]);
+                            strncat(query,tempbuf,strlen(tempbuf));
+                        }
+                        else
+                        {
+                            sprintf(tempbuf,"id = '%s' or ", sql_row[1]);
+                            strncat(query,tempbuf,strlen(tempbuf));
+                        }
+                    }
+                    query[strlen(query)-3]='\0';
+                    mysql_free_result(sql_res);
+                    
+                    printf("%s\n", query);
+                    printf("before start\n");
+                    
+                    if(mysql_query(&mysql, query))
+                    {
+                        printf("7 query failed...\n");
+                        printf("%s\n", mysql_error(&mysql));
+                        exit(1);
+                    }
+                    else
+                    {
+                        sql_res = mysql_store_result(&mysql);
+                        
+                        int i = 0;
+                        printf("fields : %d\n",fields);
+                        while( (sql_row = mysql_fetch_row(sql_res)) != NULL )
+                        {   
+                            strcpy(usersfromDB[i].id,sql_row[0]);
+                            strcpy(usersfromDB[i].password,sql_row[1]);
+                            strcpy(usersfromDB[i].email,sql_row[2]);
+                            strcpy(usersfromDB[i].name,sql_row[3]);
+                            strcpy(usersfromDB[i].sex,sql_row[4]);
+                            strcpy(usersfromDB[i].statusmsg,sql_row[5]);
+                            strcpy(usersfromDB[i].age,sql_row[6]);
+                            strcpy(usersfromDB[i].height,sql_row[7]);
+                            strcpy(usersfromDB[i].address,sql_row[8]);
+                            strcpy(usersfromDB[i].hobby,sql_row[9]);
+                            strcpy(usersfromDB[i].college,sql_row[10]);
+                            strcpy(usersfromDB[i].major,sql_row[11]);
+                            strcpy(usersfromDB[i].imageURL,sql_row[12]);
+                            strcpy(usersfromDB[i].religion,sql_row[13]);
+                            strcpy(usersfromDB[i].club,sql_row[14]);
+                            strcpy(usersfromDB[i].abroadexp,sql_row[15]);
+                            strcpy(usersfromDB[i].milserv,sql_row[16]);
+                            
+                            i++;
+                        }
+                        char messagepart[1024];
+                        
+                    // int size=strlen(messagepart);
+                        strcpy(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 1024\r\nContent-Type:text/plain\r\n\r\n");
+                        for (int i =0;i<fields;i++)
+                        {
+                            sprintf(messagepart,"%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$%s$|",usersfromDB[i].id,usersfromDB[i].password,usersfromDB[i].email,usersfromDB[i].name,usersfromDB[i].sex,usersfromDB[i].statusmsg,usersfromDB[i].age,usersfromDB[i].height,usersfromDB[i].address,usersfromDB[i].hobby,usersfromDB[i].college,usersfromDB[i].major,usersfromDB[i].imageURL,usersfromDB[i].religion,usersfromDB[i].club,usersfromDB[i].abroadexp,usersfromDB[i].milserv);
+                            
+                            puts("PASS\n");
+                            if(strcat(response_packet,messagepart)==NULL)
+                                error_handling("strcat() error in response_packet for chattinglist\n");
+                        }
+                            if(strncat(response_packet,endtoken,1)==NULL)
+                            error_handling("strcat() error in response_packet for chattinglist\n");
+                    }
+                }    
+            }
             break;
         case '8' :      //chatting accept request message
         	strcpy(header, strtok(message,"$"));
@@ -753,7 +854,7 @@ void parse_message(int clnt_sock,char* message, user_info* user, chat* chatinfo,
             strcpy(chatinfo->d_id,strtok(NULL,"$"));
             strcpy(chatinfo->acceptance,strtok(NULL,"$"));
             
-            sprintf(query, "SELECT * FROM waitq WHERE sendid = '%s', recvid = '%s'", chatinfo->d_id, chatinfo->s_id);
+            sprintf(query, "SELECT * FROM waitq WHERE sendid = '%s' or recvid = '%s'", chatinfo->d_id, chatinfo->s_id);
             
             if(mysql_query(&mysql, query))
             {
@@ -763,21 +864,87 @@ void parse_message(int clnt_sock,char* message, user_info* user, chat* chatinfo,
             }
             else
             {
-                //put id into chatlist
-                //delete waitq
-            }
+            	sql_res = mysql_store_result(&mysql);
+            	fields = mysql_num_rows(sql_res);
                 
-                if(!strcmp(sql_row[0], 
-            
-            dbputok=1; //CHANGE DB : change table of the connection info above. "WAITING QUEUE" to "CHATTING LIST"
-            if (dbputok==0)
-                sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nFAIL&");
-            else if(!strcmp("0",chatinfo->acceptance))
-                sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nREJECT&");
-            else if(!strcmp("1",chatinfo->acceptance))
-                sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nACCEPT&");
-            else
-                sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nSENT_WRONG&");
+                printf(" case 9 , fields : %d\n", fields);
+                printf("%s\n", chatinfo->acceptance);
+            	
+            	if(fields == 0)
+            	{
+            		printf("NO WAITING QUEUE\n");
+            		sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nFAIL&");
+                }
+            	else if(!strcmp("0",chatinfo->acceptance))
+            	{
+            		printf("CHATTING REJECT\n");
+            		sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 1024\r\nContent-Type:text/plain\r\n\r\nREJECT&");
+            		
+            		sprintf(query, "DELETE FROM waitq WHERE sendid = '%s' and recvid = '%s'", chatinfo->d_id, chatinfo->s_id);
+            		
+                        if(mysql_query(&mysql, query))
+                        {
+                            printf("WAITING QUEUE DELETE FAILED...\n");
+                            printf("%s\n", mysql_error(&mysql));
+                            exit(1);
+                        }
+                        else
+                            printf("WAITING QUEUE DELETE COMPLETE\n");
+            	}
+            	else if(!strcmp("1",chatinfo->acceptance))
+            	{
+            		printf("CHATTING ACCEPT\n");
+            		sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 1024\r\nContent-Type:text/plain\r\n\r\nACCEPT&");
+            		
+            		sprintf(query, "DELETE FROM waitq WHERE sendid = '%s' and recvid = '%s'", chatinfo->d_id, chatinfo->s_id);
+            		
+                        if(mysql_query(&mysql, query))
+                        {
+                            printf("WAITING QUEUE DELETE FAILED...\n");
+                            printf("%s\n", mysql_error(&mysql));
+                            exit(1);
+                        }
+                        else
+                            printf("WAITING QUEUE DELETE COMPLETE\n");
+                        
+                        sprintf(query, "INSERT INTO chatroom (id1, id2) VALUES ('%s', '%s')", chatinfo->s_id, chatinfo->d_id);
+                        
+                        if(mysql_query(&mysql, query))
+                        {
+                            printf("CHATROOOM QUERY FAILED...\n");
+                            printf("%s\n", mysql_error(&mysql));
+                            exit(1);
+                        }
+                        else
+                        {
+                            printf("CHATROOM MADE\n");
+                            
+                            sprintf(query, "INSERT INTO chatmsg (sendid, recvid, msg, time, image) VALUES ('%s', '%s', '%s', ' ', ' ')", chatinfo->s_id, chatinfo->d_id, "CONNECTED");
+                            
+                            if(mysql_query(&mysql, query))
+                            {
+                                printf("CHATMSG QUERY FAILED...\n");
+                                printf("%s\n", mysql_error(&mysql));
+                                exit(1);
+                            }
+                            else
+                                printf("CONNECTED CHATTING MESSAGE SENT\n");
+                            
+                            sprintf(query, "INSERT INTO chatmsg (sendid, recvid, msg, time, image) VALUES ('%s', '%s', '%s', ' ', ' ')", chatinfo->d_id, chatinfo->s_id, "CONNECTED");
+                            
+                            if(mysql_query(&mysql, query))
+                            {
+                                printf("CHATMSG QUERY FAILED...\n");
+                                printf("%s\n", mysql_error(&mysql));
+                                exit(1);
+                            }
+                            else
+                                printf("CONNECTED CHATTING MESSAGE SENT\n");
+                        }
+            	}
+            	else
+            		sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 1024\r\nContent-Type:text/plain\r\n\r\nSENT_WRONG&");
+            }
             break;
             
         case 'a' :      //chat : send txt
@@ -792,7 +959,7 @@ void parse_message(int clnt_sock,char* message, user_info* user, chat* chatinfo,
 					
 					if(mysql_query(&mysql, query))
 					{
-						printf("e query failed...\n");
+						printf("a query failed...\n");
 						printf("%s\n", mysql_error(&mysql));
 						exit(1);
 					}
@@ -815,7 +982,7 @@ void parse_message(int clnt_sock,char* message, user_info* user, chat* chatinfo,
 					
 					if(mysql_query(&mysql, query))
 					{
-						printf("e query failed...\n");
+						printf("b query failed...\n");
 						printf("%s\n", mysql_error(&mysql));
 						exit(1);
 					}
@@ -828,7 +995,6 @@ void parse_message(int clnt_sock,char* message, user_info* user, chat* chatinfo,
 
             break;
         case 'c' :      //update profile message
-            
             strcpy(header, strtok(message,"$"));   
             user_info newuserinfo={0,};
             strcpy(newuserinfo.id,strtok(NULL,"$"));
@@ -850,20 +1016,32 @@ void parse_message(int clnt_sock,char* message, user_info* user, chat* chatinfo,
             strcpy(newuserinfo.milserv, strtok(NULL,"$"));
             //put DB new information
             
-            int dbputok=1; 
-            if (dbputok==0)
+            sprintf(query, "UPDATE profile SET name = '%s', stateMsg = '%s', age = '%s', height = '%s', address = '%s', hobby = '%s', college = '%s', major = '%s', imageURI = '%s', religion = '%s', circle = '%s', abroadExperience = '%s', militaryStatus = '%s' WHERE id = '%s'", newuserinfo.name, newuserinfo.statusmsg, newuserinfo.age, newuserinfo.height, newuserinfo.address, newuserinfo.hobby, newuserinfo.college, newuserinfo.major, newuserinfo.imageURL, newuserinfo.religion, newuserinfo.club, newuserinfo.abroadexp, newuserinfo.milserv, newuserinfo.id);
+            
+            if(mysql_query(&mysql, query))
+            {
+                printf("c query failed...\n");
                 sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nFAIL&");
+                printf("%s\n", mysql_error(&mysql));
+                exit(1);
+            }
             else
+            {
+                printf("PROFILE UPDATE COMPLETE\n");
                 sprintf(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type:text/plain\r\n\r\nOK&");
+            }
             break;
+            
+            
         case 'd' :      //unread msg
             strcpy(header, strtok(message,"$"));  
             strcpy(chatinfo->s_id, strtok(NULL,"$"));  
             
             
             //get unreadmsg 
-            sprintf(query, "SELECT * FROM chatmsg WHERE recvid = '%s'", user->id);
+            sprintf(query, "SELECT * FROM chatmsg WHERE recvid = '%s'", chatinfo->s_id);
             strcpy(response_packet,"HTTP/1.1 200 OK\r\nContent-Length: 1024\r\nContent-Type:text/plain\r\n\r\n");
+            
             if(mysql_query(&mysql, query))
             {
                 printf("d query failed...\n");
@@ -878,7 +1056,8 @@ void parse_message(int clnt_sock,char* message, user_info* user, chat* chatinfo,
                 if(fields == 0)
                 {
                     printf("no data found in DB (no chat message)\n");
-                    sprintf(query, "SELECT * FROM chatroom WHERE id1 = '%s' or id2 = '%s'", user->id, user->id);
+                    sprintf(query, "SELECT * FROM chatroom WHERE id1 = '%s' or id2 = '%s'", chatinfo->s_id, chatinfo->s_id);
+
                         if(mysql_query(&mysql, query))
                         {
                             printf("7 query failed...\n");
@@ -889,34 +1068,36 @@ void parse_message(int clnt_sock,char* message, user_info* user, chat* chatinfo,
                         {
                             sql_res = mysql_store_result(&mysql);
                             fields = mysql_num_rows(sql_res);
-                            while( (sql_row = mysql_fetch_row(sql_res)) !=NULL )
+
+                
+                            if(fields == 0)
                             {
-                                if(strcmp(sql_row[0],user->id))
+                                printf("no data found in DB (no chatroom)\n");
+                                nochat =0;
+                            }
+                            else{
+                                while( (sql_row = mysql_fetch_row(sql_res)) !=NULL )
                                 {
-                                    sprintf(tempbuf,"%s$ $ $ |", sql_row[0]);
-                                    printf("%s",tempbuf);
-                                    strncat(response_packet,tempbuf,strlen(tempbuf));
-                                }
-                                else
-                                {
-                                    sprintf(tempbuf,"%s$ $ $ |", sql_row[1]);
-                                    printf("%s",tempbuf);
-                                    strncat(response_packet,tempbuf,strlen(tempbuf));
+                                    if(strcmp(sql_row[0],chatinfo->s_id))
+                                    {
+                                        sprintf(tempbuf,"%s$ $ $ |", sql_row[0]);
+                                        printf("%s",tempbuf);
+                                        strncat(response_packet,tempbuf,strlen(tempbuf));
+                                    }
+                                    else
+                                    {
+                                        sprintf(tempbuf,"%s$ $ $ |", sql_row[1]);
+                                        printf("%s",tempbuf);
+                                        strncat(response_packet,tempbuf,strlen(tempbuf));
+                                    }
                                 }
                             }
                         }
-                        
-                        
-                        
-                        if(strncat(response_packet,endtoken,1)==NULL)
-                            error_handling("strcat() error in response_packet for chattinglist\n");
                 }
                 else            
                 {
-
-                    
                     char tempid[20] = {0,};
-                    sprintf(query, "SELECT * FROM chatmsg ORDER BY sendid asc");
+                    sprintf(query, "SELECT * FROM chatmsg WHERE recvid = '%s' ORDER BY sendid asc", chatinfo->s_id);
                     
                     if(mysql_query(&mysql, query))
                     {
@@ -951,7 +1132,8 @@ void parse_message(int clnt_sock,char* message, user_info* user, chat* chatinfo,
                             // 2, 3, 4 add
                             //message combine
                         }
-                        sprintf(query, "SELECT * FROM chatroom WHERE id1 = '%s' or id2 = '%s'", user->id, user->id);
+                        
+                        sprintf(query, "SELECT * FROM chatroom WHERE id1 = '%s' or id2 = '%s'", chatinfo->s_id, chatinfo->s_id);
                         if(mysql_query(&mysql, query))
                         {
                             printf("7 query failed...\n");
@@ -962,30 +1144,80 @@ void parse_message(int clnt_sock,char* message, user_info* user, chat* chatinfo,
                         {
                             sql_res = mysql_store_result(&mysql);
                             fields = mysql_num_rows(sql_res);
-                            while( (sql_row = mysql_fetch_row(sql_res)) !=NULL )
+                            if(fields == 0)
                             {
-                                if(strcmp(sql_row[0],user->id))
+                                printf("no data found in DB (no chatroom)\n");
+                                nochat =0;
+                            }
+                            else{
+                                while( (sql_row = mysql_fetch_row(sql_res)) !=NULL )
                                 {
-                                    sprintf(tempbuf,"|%s$ $ $ ", sql_row[0]);
-                                    printf("%s",tempbuf);
-                                    strncat(response_packet,tempbuf,strlen(tempbuf));
-                                }
-                                else
-                                {
-                                    sprintf(tempbuf,"|%s$ $ $ ", sql_row[1]);
-                                    printf("%s",tempbuf);
-                                    strncat(response_packet,tempbuf,strlen(tempbuf));
+                                    if(strcmp(sql_row[0],chatinfo->s_id))
+                                    {
+                                        sprintf(tempbuf,"|%s$ $ $ ", sql_row[0]);
+                                        printf("%s",tempbuf);
+                                        strncat(response_packet,tempbuf,strlen(tempbuf));
+                                    }
+                                    else
+                                    {
+                                        sprintf(tempbuf,"|%s$ $ $ ", sql_row[1]);
+                                        printf("%s",tempbuf);
+                                        strncat(response_packet,tempbuf,strlen(tempbuf));
+                                    }
                                 }
                             }
                         }
-                        
-                        
-                        
-                        if(strncat(response_packet,endtoken,1)==NULL)
-                            error_handling("strcat() error in response_packet for chattinglist\n");
                     }
                 }
-           }
+            }
+                
+                
+                //GET INFORMATION FROM WAITING QUEUE
+                
+            sprintf(query, "SELECT * FROM waitq WHERE sendid = '%s' or recvid = '%s'", chatinfo->s_id, chatinfo->s_id);
+            
+            if(mysql_query(&mysql, query))
+			{
+				printf("d WAITING QUEUE query failed...\n");
+				printf("%s\n", mysql_error(&mysql));
+				exit(1);
+			}
+			else
+			{
+          		sql_res = mysql_store_result(&mysql);
+                fields = mysql_num_rows(sql_res);
+                
+          		if(fields == 0)
+          		{
+          			printf("no data found in DB (NO WAITING QUEUE)\n");
+				}
+				else
+                {
+                    printf("HOW MANY WAITING : %d\n", fields);
+                            //put all info to "user_info usersfromDB"
+                    user_info usersfromDB[fields];
+ 
+                    
+                    while( (sql_row = mysql_fetch_row(sql_res)) !=NULL )
+                    {
+                        if(strcmp(sql_row[0],chatinfo->s_id))
+                        {
+                            sprintf(tempbuf,"|%s$ $ $ ", sql_row[0]);
+                            printf("%s",tempbuf);
+                            strncat(response_packet,tempbuf,strlen(tempbuf));
+                        }
+                        else
+                        {
+                            sprintf(tempbuf,"|%s$ $ $ ", sql_row[1]);
+                            printf("%s",tempbuf);
+                            strncat(response_packet,tempbuf,strlen(tempbuf));
+                        }
+                    }
+                }
+            }
+            
+            if(strncat(response_packet,endtoken,1)==NULL)
+                error_handling("strcat() error in response_packet for chattinglist\n");
            
            break;
         case 'e' :      //get msg inside the chatting room
